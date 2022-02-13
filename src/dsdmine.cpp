@@ -1,14 +1,14 @@
 /*
 Copyright 2022 DragonSWDev
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
-to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
 and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
@@ -38,18 +38,18 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
 #endif
 
-#if defined(WIN32) || defined(_WIN32) 
-#define PATH_SEPARATOR "\\" 
-#else 
-#define PATH_SEPARATOR "/" 
-#endif 
+#if defined(WIN32) || defined(_WIN32)
+	#define PATH_SEPARATOR "\\"
+#else
+	#define PATH_SEPARATOR "/"
+#endif
 
 enum FaceState { NORMAL, NORMAL_CLICK, FIELD_CLICK, GAME_WON, GAME_LOST };
 enum GameMode { BEGINNER, ADVANCED, EXPERT, CUSTOM };
 enum WindowType { CUSTOM_GAME, BEST_SCORES, ABOUT, NEW_TIME };
 enum GameState { INITIALIZED, STARTED, WON, LOST };
 
-struct FieldType 
+struct FieldType
 {
 	bool isVisible; //Field visible
 	bool isMine; //Field with mine
@@ -76,11 +76,11 @@ std::mt19937 randomEngine;
 //Get random value in range
 int getRandomNumber(int min, int max)
 {
-    return std::uniform_int_distribution<int>{min, max}(randomEngine);
+	return std::uniform_int_distribution<int>{min, max}(randomEngine);
 }
 
 //Draw display textures with provided values (get width to put right display in right border of the window)
-void drawDisplay(SDL_Renderer* renderer, SDL_Texture* displayTexture, int time, int flags, int width) 
+void drawDisplay(SDL_Renderer* renderer, SDL_Texture* displayTexture, int time, int flags, int width)
 {
 	if (time > 999)
 	{
@@ -179,7 +179,7 @@ void drawDisplay(SDL_Renderer* renderer, SDL_Texture* displayTexture, int time, 
 void drawFace(SDL_Renderer* renderer, SDL_Texture* faceTexture, FaceState state)
 {
 	SDL_Rect srcRect, dstRect;
-	
+
 	//Face
 	srcRect.w = FACE_SIZE;
 	srcRect.h = FACE_SIZE;
@@ -384,7 +384,7 @@ void generateField(int selectedRow, int selectedColumn)
 			mineRow = getRandomNumber(0, fieldHeight - 1);
 			mineColumn = getRandomNumber(0, fieldWidth - 1);
 		}
-		
+
 		//Set mine on selected field
 		fieldArray[mineRow][mineColumn].isMine = true;
 	}
@@ -489,7 +489,7 @@ void uncoverTile(int row, int column)
 	}
 
 	floodFill(row, column);
-	
+
 	//Check if player won game (only mine tiles are left)
 	//All safe tiles should be visible
 	//Count visible tiles and check if their number is equal to number of tiles minus number of mines
@@ -575,14 +575,15 @@ bool isSelectable(int row, int column)
 	return true;
 }
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
 	SDL_Texture* fields = NULL, *faces = NULL, *display = NULL;
 	std::string basePath, prefPath;
 
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	{
 		fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
 		return EXIT_FAILURE;
 	}
@@ -593,37 +594,39 @@ int main(int argc, char* argv[])
 	windowHeight = 199;
 
 	window = SDL_CreateWindow("dsdmine", 100, 100, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
-	
-	if (window == NULL) {
+
+	if (window == NULL)
+	{
 		fprintf(stderr, "SDL_CreateWindow Error: %s\n", SDL_GetError());
 		return EXIT_FAILURE;
 	}
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-	
-	if(renderer == NULL) {
+
+	if(renderer == NULL)
+	{
 		fprintf(stderr, "SDL_CreateRenderer Error: %s\n", SDL_GetError());
 
 		return EXIT_FAILURE;
 	}
 
 	IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.IniFilename = NULL; //Don't create ImGui ini file
 
-    ImGui::StyleColorsDark();
+	ImGui::StyleColorsDark();
 
-    // Setup Platform/Renderer backends
-    ImGui_ImplSDL2_InitForSDLRenderer(window);
-    ImGui_ImplSDLRenderer_Init(renderer);
+	// Setup Platform/Renderer backends
+	ImGui_ImplSDL2_InitForSDLRenderer(window);
+	ImGui_ImplSDLRenderer_Init(renderer);
 
 	//Load assets from base directory
 	fields = IMG_LoadTexture(renderer, (basePath + "assets"+PATH_SEPARATOR+"tiles.png").c_str());
 	faces = IMG_LoadTexture(renderer, (basePath + "assets"+PATH_SEPARATOR+"faces.png").c_str());
 	display = IMG_LoadTexture(renderer, (basePath + "assets"+PATH_SEPARATOR+"display.png").c_str());
 
-	if (fields == NULL || faces == NULL || display == NULL) 
+	if (fields == NULL || faces == NULL || display == NULL)
 	{
 		fprintf(stderr, "IMG_LoadTexture Error: %s\n", IMG_GetError());
 
@@ -667,7 +670,7 @@ int main(int argc, char* argv[])
 	mINI::INIFile configFile(prefPath + "besttimes.ini");
 	mINI::INIStructure iniStructure;
 	BestTimes* bestTimes;
-	
+
 	if (loadConfig && !std::filesystem::exists(prefPath + "besttimes.ini")) //Check if besttimes.ini file exists
 	{
 		//Create config file
@@ -680,7 +683,7 @@ int main(int argc, char* argv[])
 		iniStructure["Expert"]["Name"] = "Unknown";
 		iniStructure["Expert"]["Time"] = "999";
 
-		loadConfig = configFile.generate(iniStructure); 
+		loadConfig = configFile.generate(iniStructure);
 	}
 
 	if (loadConfig && configFile.read(iniStructure)) //Config loaded, get values
@@ -709,12 +712,12 @@ int main(int argc, char* argv[])
 	}
 
 	unsigned timeSeed = std::chrono::system_clock::now().time_since_epoch().count();
-    randomEngine.seed(timeSeed);
+	randomEngine.seed(timeSeed);
 
 	gameMode = GameMode::BEGINNER;
 	prepareGame();
 
-    ImVec4 clear_color = ImVec4(0.75f, 0.75f, 0.75f, 1.00f);
+	ImVec4 clear_color = ImVec4(0.75f, 0.75f, 0.75f, 1.00f);
 
 	bool isRunning = true, popupWindow = false, changeMode = false, gameMenuVisible = false, helpMenuVisible = false;
 	int customWidth = fieldWidth, customHeight = fieldHeight, customMines = fieldMines, clickedRow = -1, clickedColumn = -1, startTime;
@@ -723,20 +726,22 @@ int main(int argc, char* argv[])
 	FaceState faceState = FaceState::NORMAL, oldFaceState = FaceState::NORMAL;
 	char inputName[14] = "Unknown";
 
-	while(isRunning) 
+	while(isRunning)
 	{
 		SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT)
+
+		while (SDL_PollEvent(&event))
+		{
+			ImGui_ImplSDL2_ProcessEvent(&event);
+
+			if (event.type == SDL_QUIT)
 			{
-                isRunning = false;
+				isRunning = false;
 			}
-            
+
 			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
 			{
-                isRunning = false;
+				isRunning = false;
 			}
 
 			//Handle mouse button down
@@ -749,7 +754,7 @@ int main(int argc, char* argv[])
 				SDL_GetMouseState(&x, &y);
 
 				//Check if player is clicking face (using left mouse button)
-				if (event.button.button == SDL_BUTTON_LEFT && 
+				if (event.button.button == SDL_BUTTON_LEFT &&
 					y >= 20 && y <= 20 + FACE_SIZE && x >= (16 * fieldWidth + 10) / 2 - FACE_SIZE / 2 && x <= (16 * fieldWidth + 10) / 2 + FACE_SIZE / 2)
 				{
 					oldFaceState = faceState;
@@ -757,7 +762,8 @@ int main(int argc, char* argv[])
 				}
 
 				//Check if player is clicking field (only if game is not finished)
-				if ((gameState == GameState::INITIALIZED || gameState == GameState::STARTED) && y >= 50 && y <= windowHeight - 5 && x >= 5 && x <= windowWidth - 5)
+				if ((gameState == GameState::INITIALIZED || gameState == GameState::STARTED) 
+					&& y >= 50 && y <= windowHeight - 5 && x >= 5 && x <= windowWidth - 5)
 				{
 					//Set mouse position relative to the field (top left of the field will be 0,0)
 					x -= 5;
@@ -768,7 +774,7 @@ int main(int argc, char* argv[])
 
 					row = y / TILE_SIZE;
 					column = x / TILE_SIZE;
-					
+
 					//Check if tile is selectable (if it was clicked with left mouse button)
 					if (event.button.button == SDL_BUTTON_LEFT && isSelectable(row, column))
 					{
@@ -880,7 +886,7 @@ int main(int argc, char* argv[])
 					clickedColumn = -1;
 				}
 			}
-        }
+		}
 
 		//Change window size to fit selected mode
 		//Also change game mode
@@ -901,7 +907,7 @@ int main(int argc, char* argv[])
 			customMines = fieldMines;
 
 			//Window width is supposed to be field tile width * field width + 10 (5px margin on each side)
-			//Window high is same but top margin should be bigger to make room for display and face
+			//Window hight is same but top margin should be bigger to make room for display and face
 			windowWidth = TILE_SIZE * fieldWidth + 10;
 			windowHeight = TILE_SIZE * fieldHeight + 10 + 45;
 
@@ -921,76 +927,82 @@ int main(int argc, char* argv[])
 			gameTime /= 1000;
 		}
 
-		SDL_SetRenderDrawColor(renderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255), (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
-		SDL_RenderClear(renderer);
+		SDL_SetRenderDrawColor(renderer, 
+			(Uint8)(clear_color.x * 255), 
+			(Uint8)(clear_color.y * 255), 
+			(Uint8)(clear_color.z * 255), 
+			(Uint8)(clear_color.w * 255));
 		
+		SDL_RenderClear(renderer);
+
 		 // Start the Dear ImGui frame
-        ImGui_ImplSDLRenderer_NewFrame();
-        ImGui_ImplSDL2_NewFrame(window);
-        ImGui::NewFrame();
-	
-		if (ImGui::BeginMainMenuBar()) 
-        {
-	        if (ImGui::BeginMenu("Game"))
-	        {
+		ImGui_ImplSDLRenderer_NewFrame();
+		ImGui_ImplSDL2_NewFrame(window);
+		ImGui::NewFrame();
+
+		if (ImGui::BeginMainMenuBar())
+		{
+			if (ImGui::BeginMenu("Game"))
+			{
 				gameMenuVisible = true;
 
-				if (ImGui::MenuItem("New")) 
-		        {
+				if (ImGui::MenuItem("New"))
+				{
 					changeMode = true;
-		        }
+				}
 
 				ImGui::Separator();
 
 				if (ImGui::MenuItem("Unknown (?)", NULL, marksEnabled, true))
-		        {
+				{
 					marksEnabled = !marksEnabled;
-		        }
+				}
 
 				ImGui::Separator();
 
 				if (ImGui::MenuItem("Beginner", NULL, (gameMode == GameMode::BEGINNER), true))
-		        {
+				{
 					if (gameMode != GameMode::BEGINNER)
 					{
 						gameMode = GameMode::BEGINNER;
 						changeMode = true;
 					}
-		        }
+				}
 
-				if (ImGui::MenuItem("Advanced", NULL, (gameMode == GameMode::ADVANCED), true)) 
-		        {
+				if (ImGui::MenuItem("Advanced", NULL, (gameMode == GameMode::ADVANCED), true))
+				{
 					if (gameMode != GameMode::ADVANCED)
 					{
 						gameMode = GameMode::ADVANCED;
 						changeMode = true;
 					}
-		        }
+				}
 
-				if (ImGui::MenuItem("Expert", NULL, (gameMode == GameMode::EXPERT), true)) 
-		        {
+				if (ImGui::MenuItem("Expert", NULL, (gameMode == GameMode::EXPERT), true))
+				{
 					if (gameMode != GameMode::EXPERT)
 					{
 						gameMode = GameMode::EXPERT;
 						changeMode = true;
 					}
-		        }
+				}
 
-				if (ImGui::MenuItem("Custom", NULL, (gameMode == GameMode::CUSTOM), !popupWindow)) 
-		        {
+				if (ImGui::MenuItem("Custom", NULL, (gameMode == GameMode::CUSTOM), !popupWindow))
+				{
 					popupWindow = true;
 					windowType = WindowType::CUSTOM_GAME;
-				}	
+				}
 
 				ImGui::Separator();
 
-		        if (ImGui::MenuItem("Quit"))
-		        {
-			        isRunning = false;
-		        }
+				if (ImGui::MenuItem("Quit"))
+				{
+					isRunning = false;
+				}
 
-		        ImGui::EndMenu();
-	        } else
+					ImGui::EndMenu();
+			}
+			else
 			{
 				gameMenuVisible = false;
 			}
@@ -1007,21 +1019,22 @@ int main(int argc, char* argv[])
 
 				ImGui::Separator();
 
-				if (ImGui::MenuItem("About", NULL, false, !popupWindow)) 
-		        {
+				if (ImGui::MenuItem("About", NULL, false, !popupWindow))
+				{
 					popupWindow = true;
 					windowType = WindowType::ABOUT;
-		        }
+				}
 
 				ImGui::EndMenu();
-			} else
-			{
-				helpMenuVisible = false;	
 			}
-        
-	        ImGui::EndMainMenuBar();
-        }
-		
+			else
+			{
+				helpMenuVisible = false;
+			}
+
+				ImGui::EndMainMenuBar();
+		}
+
 		if (popupWindow)
 		{
 			//Setup new window sizes and position for beginner size to make sure they will fit
@@ -1041,7 +1054,7 @@ int main(int argc, char* argv[])
 				ImGui::Begin("Custom game");
 
 				ImGui::Text("Custom field");
-				
+
 				ImGui::InputInt("Width", &customWidth);
 				ImGui::InputInt("Height", &customHeight);
 				ImGui::InputInt("Mines", &customMines);
@@ -1065,7 +1078,7 @@ int main(int argc, char* argv[])
 				ImGui::Begin("Best times");
 
 				ImGui::Text("Best times");
-				
+
 				if (!loadConfig)
 				{
 					ImGui::Text("Beginner: 999s Unknown");
@@ -1098,12 +1111,12 @@ int main(int argc, char* argv[])
 			else if (windowType == WindowType::ABOUT)
 			{
 				ImGui::Begin("dsdmine");
-				
+
 				ImGui::Text("Version:");
 				ImGui::SameLine();
 				ImGui::Text(GAME_VERSION);
 				ImGui::Text("By DragonSWDev");
-				
+
 				if (ImGui::Button("Ok"))
 				{
 					popupWindow = false;
@@ -1114,11 +1127,11 @@ int main(int argc, char* argv[])
 			else if (windowType == WindowType::NEW_TIME)
 			{
 				ImGui::Begin("New best time");
-				
+
 				ImGui::Text("New best time!");
 				ImGui::Text("Please enter your name.");
 				ImGui::InputText("Name", inputName, IM_ARRAYSIZE(inputName));
-				
+
 				if (ImGui::Button("Ok"))
 				{
 					if (loadConfig)
@@ -1134,9 +1147,9 @@ int main(int argc, char* argv[])
 			}
 		}
 
-        // Rendering
-        ImGui::Render();	
-		
+		// Rendering
+		ImGui::Render();
+
 		drawDisplay(renderer, display, gameTime, flagCount, windowWidth);
 
 		drawFace(renderer, faces, faceState);
@@ -1175,5 +1188,5 @@ int main(int argc, char* argv[])
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
