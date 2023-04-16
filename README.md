@@ -7,7 +7,7 @@ This is an cross platform implementation of Minesweeper-like game written from s
 
 ### 1. Clone repository
 
-### 2. Install SDL2, SDL2_image and cmake 
+### 2. Install SDL2 and cmake 
 
 #### Linux:
 Install SDL2 development library and cmake. For information about installing packages check manual of distribution you are using.
