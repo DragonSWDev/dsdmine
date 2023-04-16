@@ -9,12 +9,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 if(WIN32)
 	set(SDL2_PATH ${SDL2_PATH} "${CMAKE_SOURCE_DIR}/sdl2/SDL2")
-	set(SDL2_IMAGE_PATH ${SDL2_IMAGE_PATH} "${CMAKE_SOURCE_DIR}/sdl2/SDL2_image")
 endif()
 
 find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
-include_directories(${SDL2_INCLUDE_DIR} ${SDL2_IMAGE_INCLUDE_DIR})
+include_directories(${SDL2_INCLUDE_DIR})
 
 add_executable(dsdmine WIN32 MACOSX_BUNDLE
 	src/imgui.cpp 
@@ -26,7 +24,7 @@ add_executable(dsdmine WIN32 MACOSX_BUNDLE
 	src/dsdmine.cpp)
 
 target_include_directories(dsdmine PRIVATE "${CMAKE_SOURCE_DIR}/include/")
-target_link_libraries(dsdmine ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARY})
+target_link_libraries(dsdmine ${SDL2_LIBRARY})
 
 if(APPLE)
 	file(COPY "${CMAKE_SOURCE_DIR}/assets" DESTINATION "${CMAKE_BINARY_DIR}/dsdmine.app/Contents/Resources")

@@ -1,5 +1,5 @@
 /*
-Copyright 2022 DragonSWDev
+Copyright 2023 DragonSWDev
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
@@ -13,7 +13,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 */
 
 #include <SDL.h>
-#include <SDL_image.h>
+//#include <SDL_image.h>
 
 #include <iostream>
 #include <random>
@@ -21,11 +21,14 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 #include <filesystem>
 #include <string>
 
+#include "SDL_render.h"
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_sdlrenderer.h"
 
 #include "mini/ini.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
 
 #define GAME_VERSION "1.0"
 
@@ -63,6 +66,14 @@ struct BestTimes
 {
 	std::string playerName;
 	int bestTime;
+};
+
+struct StbImage
+{
+    unsigned char* pixels;
+    int width;
+    int height;
+    int channels;
 };
 
 GameMode gameMode = GameMode::BEGINNER;
@@ -575,6 +586,29 @@ bool isSelectable(int row, int column)
 	return true;
 }
 
+//Create SDL_Surface from image loaded by stb_image
+SDL_Surface* surfaceFromStbImage(StbImage image)
+{
+    int pitch = image.width * image.channels;
+
+    Uint32 redMask, greenMask, blueMask, alphaMask;
+
+    #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        int shift = (image.channels == 4) ? 0 : 8;
+        redMask = 0xff000000 >> shift;
+        greenMask = 0x00ff0000 >> shift;
+        blueMask = 0x0000ff00 >> shift;
+        alphaMask = 0x000000ff >> shift;
+    #else
+        redMask = 0x000000ff;
+        greenMask = 0x0000ff00;
+        blueMask = 0x00ff0000;
+        alphaMask = (image.channels == 4) ? 0xff000000 : 0;
+    #endif
+
+    return SDL_CreateRGBSurfaceFrom(image.pixels, image.width, image.height, image.channels*8, pitch, redMask, greenMask, blueMask, alphaMask);
+}
+
 int main(int argc, char* argv[])
 {
 	SDL_Window* window = NULL;
@@ -622,19 +656,34 @@ int main(int argc, char* argv[])
 	ImGui_ImplSDLRenderer_Init(renderer);
 
 	//Load assets from base directory
-	fields = IMG_LoadTexture(renderer, (basePath + "assets"+PATH_SEPARATOR+"tiles.png").c_str());
-	faces = IMG_LoadTexture(renderer, (basePath + "assets"+PATH_SEPARATOR+"faces.png").c_str());
-	display = IMG_LoadTexture(renderer, (basePath + "assets"+PATH_SEPARATOR+"display.png").c_str());
+	StbImage fieldsImage, facesImage, displayImage;
+	fieldsImage.pixels = stbi_load((basePath + "assets"+PATH_SEPARATOR+"tiles.png").c_str(), &fieldsImage.width, &fieldsImage.height, &fieldsImage.channels, 0);
+	facesImage.pixels = stbi_load((basePath + "assets"+PATH_SEPARATOR+"faces.png").c_str(), &facesImage.width, &facesImage.height, &facesImage.channels, 0);
+	displayImage.pixels = stbi_load((basePath + "assets"+PATH_SEPARATOR+"display.png").c_str(), &displayImage.width, &displayImage.height, &displayImage.channels, 0);
+
+	if (fieldsImage.pixels != NULL && facesImage.pixels != NULL && displayImage.pixels != NULL)
+	{
+		fields = SDL_CreateTextureFromSurface(renderer, surfaceFromStbImage(fieldsImage));
+		faces = SDL_CreateTextureFromSurface(renderer, surfaceFromStbImage(facesImage));
+		display = SDL_CreateTextureFromSurface(renderer, surfaceFromStbImage(displayImage));
+	}
 
 	if (fields == NULL || faces == NULL || display == NULL)
 	{
-		fprintf(stderr, "IMG_LoadTexture Error: %s\n", IMG_GetError());
+		fprintf(stderr, "Failed loading assets!\n");
 
 		return EXIT_FAILURE;
 	}
 
 	//Try to load icon
-	SDL_Surface* windowIcon = IMG_Load((basePath + "assets"+PATH_SEPARATOR+"icon.png").c_str());
+	StbImage windowIconImage;
+	windowIconImage.pixels = stbi_load((basePath + "assets"+PATH_SEPARATOR+"icon.png").c_str(), &windowIconImage.width, &windowIconImage.height, &windowIconImage.channels, 0);
+	SDL_Surface* windowIcon;
+
+	if (windowIconImage.pixels != NULL)
+	{
+		windowIcon = surfaceFromStbImage(windowIconImage);
+	}
 
 	if (windowIcon)
 	{
@@ -1184,6 +1233,9 @@ int main(int argc, char* argv[])
 	SDL_DestroyTexture(fields);
 	SDL_DestroyTexture(faces);
 	SDL_DestroyTexture(display);
+	stbi_image_free(fieldsImage.pixels);
+	stbi_image_free(facesImage.pixels);
+	stbi_image_free(displayImage.pixels);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
