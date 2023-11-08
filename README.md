@@ -40,6 +40,8 @@ On Windows and Linux dsdmine expects assets directory to be present in the same 
 
 **-portable** - Run without creating and reading ini configuration file. Best times won't be saved.
 
+**-scale=value** - Scale game window and content by times specified in value that needs to be between 1 and 10. Useful for screens with big resolution.
+
 ### Configuration
 Configuration file is located in these directories:
 
@@ -50,7 +52,7 @@ Configuration file is located in these directories:
 %appdata%\DragonSWDev\dsdmine\
 
 #### macOS
-~/Library/Application Support/dsdmine/
+~/Library/Application Support/DragonSWDev/dsdmine/
 
 ## License
 dsdmine is distributed under the terms of MIT License. Project depends on [SDL2](https://www.libsdl.org), [stb_image](https://github.com/nothings/stb/), [Dear ImGui](https://github.com/ocornut/imgui) and [mINI](https://github.com/pulzed/mINI). For information about these dependencies licensing check their respective websites.

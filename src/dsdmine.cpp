@@ -80,7 +80,7 @@ GameState gameState = GameState::INITIALIZED;
 bool marksEnabled = true;
 FieldType **fieldArray = NULL;
 
-int fieldWidth, fieldHeight, fieldMines, windowWidth, windowHeight, gameTime, flagCount;
+int fieldWidth, fieldHeight, fieldMines, windowWidth, windowHeight, gameTime, flagCount, contentScale;
 std::mt19937 randomEngine;
 
 //Get random value in range
@@ -124,17 +124,18 @@ void drawDisplay(SDL_Renderer* renderer, SDL_Texture* displayTexture, int time, 
 		}
 	}
 
-	for (int i = 0; i < valueStr.size(); i++) {
+	for (int i = 0; i < valueStr.size(); i++) 
+	{
 		SDL_Rect srcRect, dstRect;
 		srcRect.w = DISPLAY_WIDTH;
 		srcRect.h = DISPLAY_HEIGHT;
 		srcRect.x = 0;
 		srcRect.y = (valueStr[i] - 48) * 23; //48 is ASCII for 0
 
-		dstRect.x = 5 + 13 * i;
-		dstRect.y = 20;
-		dstRect.w = DISPLAY_WIDTH;
-		dstRect.h = DISPLAY_HEIGHT;
+		dstRect.x = (5 * contentScale) + (DISPLAY_WIDTH * contentScale) * i;
+		dstRect.y = (20 * contentScale);
+		dstRect.w = DISPLAY_WIDTH * contentScale;
+		dstRect.h = DISPLAY_HEIGHT * contentScale;
 
 		SDL_RenderCopy(renderer, displayTexture, &srcRect, &dstRect);
 	}
@@ -161,7 +162,8 @@ void drawDisplay(SDL_Renderer* renderer, SDL_Texture* displayTexture, int time, 
 		valueStr = "-0" + valueStr;
 	}
 
-	for (int i = 0; i < valueStr.size(); i++) {
+	for (int i = 0; i < valueStr.size(); i++) 
+	{
 		SDL_Rect srcRect, dstRect;
 		srcRect.w = DISPLAY_WIDTH;
 		srcRect.h = DISPLAY_HEIGHT;
@@ -176,10 +178,10 @@ void drawDisplay(SDL_Renderer* renderer, SDL_Texture* displayTexture, int time, 
 			srcRect.y = 10 * 23;
 		}
 
-		dstRect.x = (width - 39 - 5) + 13 * i;
-		dstRect.y = 20;
-		dstRect.w = DISPLAY_WIDTH;
-		dstRect.h = DISPLAY_HEIGHT;
+		dstRect.x = ((width * contentScale) - ((DISPLAY_WIDTH * contentScale) * 3) - (5 * contentScale)) + (DISPLAY_WIDTH * contentScale) * i;
+		dstRect.y = (20 * contentScale);
+		dstRect.w = DISPLAY_WIDTH * contentScale;
+		dstRect.h = DISPLAY_HEIGHT * contentScale;
 
 		SDL_RenderCopy(renderer, displayTexture, &srcRect, &dstRect);
 	}
@@ -199,13 +201,13 @@ void drawFace(SDL_Renderer* renderer, SDL_Texture* faceTexture, FaceState state)
 	//State enum order is the same as face texture tiles order
 	srcRect.y = state * srcRect.h;
 
-	dstRect.w = FACE_SIZE;
-	dstRect.h = FACE_SIZE;
-	dstRect.y = 20;
+	dstRect.w = FACE_SIZE * contentScale;
+	dstRect.h = FACE_SIZE * contentScale;
+	dstRect.y = (20 * contentScale);
 
 	//Window with is 16 (field tile width) * field width + 10 (5px margin on each side)
 	//Point (0, 0) is top left corner so substract half of the width to make it centered
-	dstRect.x = (16 * fieldWidth + 10) / 2 - (srcRect.w / 2);
+	dstRect.x = ((TILE_SIZE * contentScale) * fieldWidth + (10 * contentScale)) / 2 - ((srcRect.w * contentScale) / 2);
 
 	SDL_RenderCopy(renderer, faceTexture, &srcRect, &dstRect);
 }
@@ -219,8 +221,8 @@ void drawField(SDL_Renderer* renderer, SDL_Texture* fieldTexture)
 	srcRect.h = TILE_SIZE;
 	srcRect.x = 0;
 
-	dstRect.w = TILE_SIZE;
-	dstRect.h = TILE_SIZE;
+	dstRect.w = TILE_SIZE * contentScale;
+	dstRect.h = TILE_SIZE * contentScale;
 
 	for (int row = 0; row < fieldHeight; row++)
 	{
@@ -268,8 +270,8 @@ void drawField(SDL_Renderer* renderer, SDL_Texture* fieldTexture)
 				srcRect.y = 0;
 			}
 
-			dstRect.x = 5 + col * TILE_SIZE;
-			dstRect.y = 50 + row * TILE_SIZE;
+			dstRect.x = (5 * contentScale) + col * (TILE_SIZE * contentScale);
+			dstRect.y = (50 * contentScale) + row * (TILE_SIZE * contentScale);
 
 			SDL_RenderCopy(renderer, fieldTexture, &srcRect, &dstRect);
 		}
@@ -615,6 +617,110 @@ int main(int argc, char* argv[])
 	SDL_Texture* fields = NULL, *faces = NULL, *display = NULL;
 	std::string basePath, prefPath;
 
+	contentScale = 1;
+
+	//Check if config directory is present and load it, try to create it otherwise
+	bool loadConfig = true;
+
+	if (argc > 1)
+	{
+		for (int i = 1; i < argc; i++)
+		{
+			std::string argument = argv[i];
+
+			if (argument == "-p" || argument == "--portable")
+			{
+				loadConfig = false;
+			}
+
+			if (argument.find("--scale=") != std::string::npos && argument.size() > 8)
+			{
+				std::string scaleString = argument.substr(8, argument.size());
+
+				try 
+				{
+				 contentScale = std::stoi(scaleString);
+				} 
+				catch (...) 
+				{
+					contentScale = 1;
+				}
+			}
+		}
+	}
+
+	if (loadConfig) //If load config is enabled then try to create pref path
+	{
+		char* prefLocation = SDL_GetPrefPath("DragonSWDev", "dsdmine"); //Try to create pref directory if it doesn't exists
+
+		if (prefLocation)
+		{
+			prefPath.append(prefLocation);
+			SDL_free(prefLocation);
+		}
+		else
+		{
+			loadConfig = false;
+		}
+	}
+
+	mINI::INIFile configFile(prefPath + "besttimes.ini");
+	mINI::INIStructure iniStructure;
+	BestTimes* bestTimes;
+
+	if (loadConfig && !std::filesystem::exists(prefPath + "besttimes.ini")) //Check if besttimes.ini file exists
+	{
+		//Create config file
+		iniStructure["Beginner"]["Name"] = "Unknown";
+		iniStructure["Beginner"]["Time"] = "999";
+
+		iniStructure["Advanced"]["Name"] = "Unknown";
+		iniStructure["Advanced"]["Time"] = "999";
+
+		iniStructure["Expert"]["Name"] = "Unknown";
+		iniStructure["Expert"]["Time"] = "999";
+
+		iniStructure["Render"]["Scale"] = "1";
+
+		loadConfig = configFile.generate(iniStructure);
+	}
+
+	if (loadConfig && configFile.read(iniStructure)) //Config loaded, get values
+	{
+		bestTimes = new BestTimes[3];
+
+		bestTimes[0].playerName = iniStructure["Beginner"]["Name"];
+		bestTimes[1].playerName = iniStructure["Advanced"]["Name"];
+		bestTimes[2].playerName = iniStructure["Expert"]["Name"];
+
+		try
+		{
+			bestTimes[0].bestTime = std::stoi(iniStructure["Beginner"]["Time"]);
+			bestTimes[1].bestTime = std::stoi(iniStructure["Advanced"]["Time"]);
+			bestTimes[2].bestTime = std::stoi(iniStructure["Expert"]["Time"]);
+
+			//Set content scale only if variable is set to nondefault value (set by command line arguments)
+			if (contentScale == 1)
+			{
+				contentScale = std::stoi(iniStructure["Render"]["Scale"]);
+			}
+		}
+		catch (...)
+		{
+			std::cerr << "Reading config failed" << std::endl;
+			loadConfig = false;
+		}
+	}
+	else
+	{
+		loadConfig = false;
+	}
+
+	if (contentScale < 1 || contentScale > 10)
+	{
+		contentScale = 1;
+	}
+
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
 		fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
@@ -626,7 +732,7 @@ int main(int argc, char* argv[])
 	windowWidth = 154; //Initial window size for beginner mode
 	windowHeight = 199;
 
-	window = SDL_CreateWindow("dsdmine", 100, 100, windowWidth, windowHeight, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("dsdmine", 100, 100, windowWidth * contentScale, windowHeight * contentScale, SDL_WINDOW_SHOWN);
 
 	if (window == NULL)
 	{
@@ -647,6 +753,7 @@ int main(int argc, char* argv[])
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.IniFilename = NULL; //Don't create ImGui ini file
+	io.FontGlobalScale = contentScale;
 
 	ImGui::StyleColorsDark();
 
@@ -689,76 +796,6 @@ int main(int argc, char* argv[])
 		SDL_SetWindowIcon(window, windowIcon);
 	}
 
-	//Check if config directory is present and load it, try to create it otherwise
-	bool loadConfig = true;
-
-	if (argc > 1)
-	{
-		if (strcmp(argv[1], "-p") || strcmp(argv[1], "--portable")) //With "-p" or "--portable" command line flag don't try to create or load config
-		{
-			loadConfig = false;
-		}
-	}
-
-	if (loadConfig) //If load config is enabled then try to create pref path
-	{
-		char* prefLocation = SDL_GetPrefPath("DragonSWDev", "dsdmine"); //Try to create pref directory if it doesn't exists
-
-		if (prefLocation)
-		{
-			prefPath.append(prefLocation);
-			SDL_free(prefLocation);
-		}
-		else
-		{
-			loadConfig = false;
-		}
-	}
-
-	mINI::INIFile configFile(prefPath + "besttimes.ini");
-	mINI::INIStructure iniStructure;
-	BestTimes* bestTimes;
-
-	if (loadConfig && !std::filesystem::exists(prefPath + "besttimes.ini")) //Check if besttimes.ini file exists
-	{
-		//Create config file
-		iniStructure["Beginner"]["Name"] = "Unknown";
-		iniStructure["Beginner"]["Time"] = "999";
-
-		iniStructure["Advanced"]["Name"] = "Unknown";
-		iniStructure["Advanced"]["Time"] = "999";
-
-		iniStructure["Expert"]["Name"] = "Unknown";
-		iniStructure["Expert"]["Time"] = "999";
-
-		loadConfig = configFile.generate(iniStructure);
-	}
-
-	if (loadConfig && configFile.read(iniStructure)) //Config loaded, get values
-	{
-		bestTimes = new BestTimes[3];
-
-		bestTimes[0].playerName = iniStructure["Beginner"]["Name"];
-		bestTimes[1].playerName = iniStructure["Advanced"]["Name"];
-		bestTimes[2].playerName = iniStructure["Expert"]["Name"];
-
-		try
-		{
-			bestTimes[0].bestTime = std::stoi(iniStructure["Beginner"]["Time"]);
-			bestTimes[1].bestTime = std::stoi(iniStructure["Advanced"]["Time"]);
-			bestTimes[2].bestTime = std::stoi(iniStructure["Expert"]["Time"]);
-		}
-		catch (...)
-		{
-			std::cerr << "Reading config failed" << std::endl;
-			loadConfig = false;
-		}
-	}
-	else
-	{
-		loadConfig = false;
-	}
-
 	unsigned timeSeed = std::chrono::system_clock::now().time_since_epoch().count();
 	randomEngine.seed(timeSeed);
 
@@ -773,6 +810,9 @@ int main(int argc, char* argv[])
 	WindowType windowType; //Decide which window should be drawn
 	FaceState faceState = FaceState::NORMAL, oldFaceState = FaceState::NORMAL;
 	char inputName[14] = "Unknown";
+
+	ImGuiStyle* style = &ImGui::GetStyle();
+	style->ScaleAllSizes(contentScale);
 
 	while(isRunning)
 	{
@@ -803,7 +843,9 @@ int main(int argc, char* argv[])
 
 				//Check if player is clicking face (using left mouse button)
 				if (event.button.button == SDL_BUTTON_LEFT &&
-					y >= 20 && y <= 20 + FACE_SIZE && x >= (16 * fieldWidth + 10) / 2 - FACE_SIZE / 2 && x <= (16 * fieldWidth + 10) / 2 + FACE_SIZE / 2)
+					y >= (20 * contentScale) && y <= (20 * contentScale) + (FACE_SIZE * contentScale) && 
+					x >= ((TILE_SIZE * contentScale) * fieldWidth + (10 * contentScale)) / 2 - (FACE_SIZE * contentScale) / 2 && 
+					x <= ((TILE_SIZE * contentScale) * fieldWidth + (10 * contentScale)) / 2 + (FACE_SIZE * contentScale) / 2)
 				{
 					oldFaceState = faceState;
 					faceState = FaceState::NORMAL_CLICK;
@@ -811,17 +853,20 @@ int main(int argc, char* argv[])
 
 				//Check if player is clicking field (only if game is not finished)
 				if ((gameState == GameState::INITIALIZED || gameState == GameState::STARTED) 
-					&& y >= 50 && y <= windowHeight - 5 && x >= 5 && x <= windowWidth - 5)
+					&& y >= (50 * contentScale) 
+					&& y <= (windowHeight * contentScale) - (5 * contentScale) 
+					&& x >= (5 * contentScale) 
+					&& x <= (windowWidth * contentScale) - (5 * contentScale))
 				{
 					//Set mouse position relative to the field (top left of the field will be 0,0)
-					x -= 5;
-					y -= 50;
+					x -= (5 * contentScale);
+					y -= (50 * contentScale);
 
 					//Calculate which tile was clicked
 					int row, column;
 
-					row = y / TILE_SIZE;
-					column = x / TILE_SIZE;
+					row = y / (TILE_SIZE * contentScale);
+					column = x / (TILE_SIZE *  contentScale);
 
 					//Check if tile is selectable (if it was clicked with left mouse button)
 					if (event.button.button == SDL_BUTTON_LEFT && isSelectable(row, column))
@@ -851,7 +896,10 @@ int main(int argc, char* argv[])
 				if (faceState == FaceState::NORMAL_CLICK)
 				{
 					//Check if cursor is still on face
-					if (y >= 20 && y <= 20 + FACE_SIZE && x >= (16 * fieldWidth + 10) / 2 - FACE_SIZE / 2 && x <= (16 * fieldWidth + 10) / 2 + FACE_SIZE / 2)
+					if (event.button.button == SDL_BUTTON_LEFT &&
+					y >= (20 * contentScale) && y <= (20 * contentScale) + (FACE_SIZE * contentScale) && 
+					x >= ((TILE_SIZE * contentScale) * fieldWidth + (10 * contentScale)) / 2 - (FACE_SIZE * contentScale) / 2 && 
+					x <= ((TILE_SIZE * contentScale) * fieldWidth + (10 * contentScale)) / 2 + (FACE_SIZE * contentScale) / 2)
 					{
 						changeMode = true;
 					}
@@ -869,15 +917,18 @@ int main(int argc, char* argv[])
 				if (clickedRow >= 0 && clickedColumn >= 0)
 				{
 					//Check if mouse is still on field
-					if (y >= 50 && y <= windowHeight - 5 && x >= 5 && x <= windowWidth - 5)
+					if (y >= (50 * contentScale) 
+					&& y <= (windowHeight * contentScale) - (5 * contentScale) 
+					&& x >= (5 * contentScale) 
+					&& x <= (windowWidth * contentScale) - (5 * contentScale))
 					{
-						x -= 5;
-						y -= 50;
+						x -= (5 * contentScale);
+						y -= (50 * contentScale);
 
 						int row, column;
 
-						row = y / TILE_SIZE;
-						column = x / TILE_SIZE;
+						row = y / (TILE_SIZE * contentScale);
+						column = x / (TILE_SIZE * contentScale);
 
 						//Still the same field - perform action
 						if (row == clickedRow && column == clickedColumn)
@@ -959,7 +1010,7 @@ int main(int argc, char* argv[])
 			windowWidth = TILE_SIZE * fieldWidth + 10;
 			windowHeight = TILE_SIZE * fieldHeight + 10 + 45;
 
-			SDL_SetWindowSize(window, windowWidth, windowHeight);
+			SDL_SetWindowSize(window, windowWidth * contentScale, windowHeight * contentScale);
 
 			gameState = GameState::INITIALIZED;
 			faceState = FaceState::NORMAL;
@@ -983,7 +1034,7 @@ int main(int argc, char* argv[])
 		
 		SDL_RenderClear(renderer);
 
-		 // Start the Dear ImGui frame
+		// Start the Dear ImGui frame
 		ImGui_ImplSDLRenderer_NewFrame();
 		ImGui_ImplSDL2_NewFrame(window);
 		ImGui::NewFrame();
@@ -1089,12 +1140,12 @@ int main(int argc, char* argv[])
 			if (gameMode == GameMode::BEGINNER)
 			{
 				ImGui::SetNextWindowPos(ImVec2(0, 0));
-				ImGui::SetNextWindowSize(ImVec2(154, 170));
+				ImGui::SetNextWindowSize(ImVec2(154 * contentScale, 170 * contentScale));
 			}
 			else
 			{
 				ImGui::SetNextWindowPos(ImVec2(10, 10));
-				ImGui::SetNextWindowSize(ImVec2(250, 170));
+				ImGui::SetNextWindowSize(ImVec2(250 * contentScale, 170 * contentScale));
 			}
 
 			if (windowType == CUSTOM_GAME)
@@ -1220,6 +1271,8 @@ int main(int argc, char* argv[])
 
 		iniStructure["Expert"]["Name"] = bestTimes[2].playerName;
 		iniStructure["Expert"]["Time"] = std::to_string(bestTimes[2].bestTime);
+
+		iniStructure["Render"]["Scale"] = std::to_string(contentScale);
 
 		configFile.write(iniStructure);
 	}
