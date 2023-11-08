@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(dsdmine VERSION "1.0")
+project(dsdmine VERSION "2.0")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
