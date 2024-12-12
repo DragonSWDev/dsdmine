@@ -22,8 +22,8 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 #include "SDL_render.h"
 #include "imgui.h"
-#include "imgui_impl_sdl.h"
-#include "imgui_impl_sdlrenderer.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdlrenderer2.h"
 
 #include "mini/ini.h"
 #define STB_IMAGE_IMPLEMENTATION
@@ -758,8 +758,8 @@ int main(int argc, char* argv[])
 	ImGui::StyleColorsDark();
 
 	// Setup Platform/Renderer backends
-	ImGui_ImplSDL2_InitForSDLRenderer(window);
-	ImGui_ImplSDLRenderer_Init(renderer);
+	ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+	ImGui_ImplSDLRenderer2_Init(renderer);
 
 	//Load assets from base directory
 	StbImage fieldsImage, facesImage, displayImage;
@@ -1035,8 +1035,8 @@ int main(int argc, char* argv[])
 		SDL_RenderClear(renderer);
 
 		// Start the Dear ImGui frame
-		ImGui_ImplSDLRenderer_NewFrame();
-		ImGui_ImplSDL2_NewFrame(window);
+		ImGui_ImplSDLRenderer2_NewFrame();
+		ImGui_ImplSDL2_NewFrame();
 		ImGui::NewFrame();
 
 		if (ImGui::BeginMainMenuBar())
@@ -1255,7 +1255,7 @@ int main(int argc, char* argv[])
 
 		drawField(renderer, fields);
 
-		ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
+		ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
 
 		SDL_RenderPresent(renderer);
 	}

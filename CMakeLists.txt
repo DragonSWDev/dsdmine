@@ -19,8 +19,8 @@ add_executable(dsdmine WIN32 MACOSX_BUNDLE
 	src/imgui_draw.cpp 
 	src/imgui_tables.cpp 
 	src/imgui_widgets.cpp 
-	src/imgui_impl_sdl.cpp 
-	src/imgui_impl_sdlrenderer.cpp 
+	src/imgui_impl_sdl2.cpp
+	src/imgui_impl_sdlrenderer2.cpp
 	src/dsdmine.cpp)
 
 target_include_directories(dsdmine PRIVATE "${CMAKE_SOURCE_DIR}/include/")
