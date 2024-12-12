@@ -38,9 +38,9 @@ On Windows and Linux dsdmine expects assets directory to be present in the same 
 ## Manual
 ### Command line arguments
 
-**-portable** - Run without creating and reading ini configuration file. Best times won't be saved.
+**--portable** or **-p** - Run without creating and reading ini configuration file. Best times won't be saved.
 
-**-scale=value** - Scale game window and content by times specified in value that needs to be between 1 and 10. Useful for screens with big resolution.
+**--scale=value** - Scale game window and content by times specified in value that needs to be between 1 and 10. Useful for screens with big resolution.
 
 ### Configuration
 Configuration file is located in these directories:

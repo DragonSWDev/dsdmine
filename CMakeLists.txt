@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(dsdmine VERSION "2.0")
+project(dsdmine VERSION "2.1")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
@@ -33,5 +33,5 @@ if(APPLE)
 	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.DragonSWDev.dsdmine")
 	set(MACOSX_BUNDLE_LONG_VERSION_STRING ${CMAKE_PROJECT_VERSION})
 	set(MACOSX_BUNDLE_SHORT_VERSION_STRING ${CMAKE_PROJECT_VERSION})
-	set(MACOSX_BUNDLE_COPYRIGHT "Copyright 2023, DragonSWDev")
+	set(MACOSX_BUNDLE_COPYRIGHT "Copyright 2024, DragonSWDev")
 endif()
