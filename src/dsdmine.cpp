@@ -1,5 +1,5 @@
 /*
-Copyright 2023 DragonSWDev
+Copyright 2026 DragonSWDev
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
 to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
@@ -29,7 +29,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
-#define GAME_VERSION "2.1"
+#define GAME_VERSION "2.2"
 
 #define TILE_SIZE 16
 #define FACE_SIZE 24
@@ -680,8 +680,6 @@ int main(int argc, char* argv[])
 		iniStructure["Expert"]["Name"] = "Unknown";
 		iniStructure["Expert"]["Time"] = "999";
 
-		iniStructure["Render"]["Scale"] = "1";
-
 		loadConfig = configFile.generate(iniStructure);
 	}
 
@@ -698,12 +696,6 @@ int main(int argc, char* argv[])
 			bestTimes[0].bestTime = std::stoi(iniStructure["Beginner"]["Time"]);
 			bestTimes[1].bestTime = std::stoi(iniStructure["Advanced"]["Time"]);
 			bestTimes[2].bestTime = std::stoi(iniStructure["Expert"]["Time"]);
-
-			//Set content scale only if variable is set to nondefault value (set by command line arguments)
-			if (contentScale == 1)
-			{
-				contentScale = std::stoi(iniStructure["Render"]["Scale"]);
-			}
 		}
 		catch (...)
 		{
@@ -716,15 +708,30 @@ int main(int argc, char* argv[])
 		loadConfig = false;
 	}
 
-	if (contentScale < 1 || contentScale > 10)
-	{
-		contentScale = 1;
-	}
-
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
 		fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
 		return EXIT_FAILURE;
+	}
+
+	SDL_DisplayMode dm;
+
+	if (SDL_GetCurrentDisplayMode(0, &dm) != 0) 
+	{
+		fprintf(stderr, "SDL_GetCurrentDisplayMode Error: %s\n", SDL_GetError());
+		contentScale = 1;
+	}
+	else
+	{
+		int scaleX = dm.w / 800;
+		int scaleY = dm.h / 600;
+
+		contentScale = std::max(1, std::min(scaleX, scaleY));
+	}
+
+	if (contentScale < 1 || contentScale > 10)
+	{
+		contentScale = 1;
 	}
 
 	basePath = SDL_GetBasePath();
@@ -1011,6 +1018,15 @@ int main(int argc, char* argv[])
 			windowHeight = TILE_SIZE * fieldHeight + 10 + 45;
 
 			SDL_SetWindowSize(window, windowWidth * contentScale, windowHeight * contentScale);
+			
+			//Set renderer viewport
+			SDL_Rect viewport;
+			viewport.x = 0;
+			viewport.y = 0;
+			viewport.w = windowWidth * contentScale;
+			viewport.h = windowHeight * contentScale;
+
+			SDL_RenderSetViewport(renderer, &viewport);
 
 			gameState = GameState::INITIALIZED;
 			faceState = FaceState::NORMAL;
@@ -1271,8 +1287,6 @@ int main(int argc, char* argv[])
 
 		iniStructure["Expert"]["Name"] = bestTimes[2].playerName;
 		iniStructure["Expert"]["Time"] = std::to_string(bestTimes[2].bestTime);
-
-		iniStructure["Render"]["Scale"] = std::to_string(contentScale);
 
 		configFile.write(iniStructure);
 	}
