@@ -21,6 +21,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 #include <string>
 
 #include "SDL_render.h"
+#include "SDL_video.h"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -632,20 +633,6 @@ int main(int argc, char* argv[])
 			{
 				loadConfig = false;
 			}
-
-			if (argument.find("--scale=") != std::string::npos && argument.size() > 8)
-			{
-				std::string scaleString = argument.substr(8, argument.size());
-
-				try 
-				{
-				 contentScale = std::stoi(scaleString);
-				} 
-				catch (...) 
-				{
-					contentScale = 1;
-				}
-			}
 		}
 	}
 
@@ -714,26 +701,6 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
-	SDL_DisplayMode dm;
-
-	if (SDL_GetCurrentDisplayMode(0, &dm) != 0) 
-	{
-		fprintf(stderr, "SDL_GetCurrentDisplayMode Error: %s\n", SDL_GetError());
-		contentScale = 1;
-	}
-	else
-	{
-		int scaleX = dm.w / 800;
-		int scaleY = dm.h / 600;
-
-		contentScale = std::max(1, std::min(scaleX, scaleY));
-	}
-
-	if (contentScale < 1 || contentScale > 10)
-	{
-		contentScale = 1;
-	}
-
 	basePath = SDL_GetBasePath();
 
 	windowWidth = 154; //Initial window size for beginner mode
@@ -745,6 +712,52 @@ int main(int argc, char* argv[])
 	{
 		fprintf(stderr, "SDL_CreateWindow Error: %s\n", SDL_GetError());
 		return EXIT_FAILURE;
+	}
+
+	int displayIndex = SDL_GetWindowDisplayIndex(window);
+
+	if (displayIndex < 0)
+	{
+		fprintf(stderr, "SDL_GetWindowDisplayIndex Error: %s\n", SDL_GetError());
+		displayIndex = 0;
+	}
+	
+	SDL_DisplayMode dm;
+
+	if (SDL_GetCurrentDisplayMode(displayIndex, &dm) != 0) 
+	{
+		fprintf(stderr, "SDL_GetCurrentDisplayMode Error: %s\n", SDL_GetError());
+		contentScale = 1;
+	}
+	else
+	{
+		int scaleX = dm.w / 800;
+		int scaleY = dm.h / 600;
+		int resScale = std::max(1, std::min(scaleX, scaleY));
+
+		int dpiScale = 1;
+	
+		//macOS on Retina screen doesn't report physical resolution so we need to calculate scale with DPI to get similar effect
+	#ifdef __APPLE__
+		float ddpi, hdpi, vdpi;
+		if (SDL_GetDisplayDPI(displayIndex, &ddpi, &hdpi, &vdpi) == 0)
+		{
+			dpiScale = std::max(1, (int)(hdpi / 96.0f));
+		}
+	#endif
+
+		//Pickup the larger value from these two
+		contentScale = std::max(resScale, dpiScale);
+	}
+
+	if (contentScale < 1 || contentScale > 10)
+	{
+		contentScale = 1;
+	}
+
+	if (contentScale != 1)
+	{
+		SDL_SetWindowSize(window, windowWidth * contentScale, windowHeight * contentScale);
 	}
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
