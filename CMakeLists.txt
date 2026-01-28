@@ -14,8 +14,6 @@ endif()
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
 
-add_compile_options(-g)
-
 add_executable(dsdmine WIN32 MACOSX_BUNDLE
 	src/imgui.cpp 
 	src/imgui_draw.cpp 
